@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
+import resumeRoutes from "./routes/resumeRoutes.js";
 
 dotenv.config();
 
@@ -17,6 +18,8 @@ app.use(
 app.use(express.json());
 
 await connectDB();
+
+app.use("/api/resumes", resumeRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running...");
