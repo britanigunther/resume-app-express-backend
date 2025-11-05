@@ -52,4 +52,19 @@ router.patch("/:id", async (req, res) => {
   }
 });
 
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedUser = await Resume.findByIdAndDelete(id);
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    return res.status(200).json(deletedUser);
+  } catch (error: unknown) {
+    return res.status(500).send("Error Message: " + error);
+  }
+});
+
 export default router;
