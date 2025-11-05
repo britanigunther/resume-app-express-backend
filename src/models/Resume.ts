@@ -62,7 +62,7 @@ export interface IResume extends Document {
 
 const ResumeSchema = new Schema<IResume>({
   name: { type: String, required: true },
-  jobTitle: String,
+  jobTitle: [String],
   contactInformation: {
     location: String,
     phoneNumber: String,
