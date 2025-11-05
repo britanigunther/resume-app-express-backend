@@ -28,4 +28,28 @@ router.post("/", async (req, res) => {
   }
 });
 
+router.patch("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    const updatedDocument = await Resume.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedDocument) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    return res.status(200).json(updatedDocument);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.name === "ValidationError") {
+        return res.status(400).send(error.message);
+      }
+    }
+    return res.status(500).send("Error Message: " + error);
+  }
+});
+
 export default router;
