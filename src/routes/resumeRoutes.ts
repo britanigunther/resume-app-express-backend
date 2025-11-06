@@ -1,69 +1,79 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import Resume from "../models/Resume.js";
 
 const router = Router();
 
-router.get("/", async (req, res) => {
+const handleRequestFailure = (error: unknown, response: Response) => {
+  if (error instanceof Error) {
+    if (error.name === "ValidationError") {
+      return response.status(400).json({
+        message: "Validation failed",
+        error: error,
+      });
+    }
+
+    if (error.name === "CastError") {
+      return response.status(400).json({
+        message: "Bad Request, Cast Error",
+        error: error,
+      });
+    }
+
+    console.error(error);
+    return response.status(500).json({ message: "Server error" });
+  }
+
+  console.error(`Failed with non-error instance ${error}`);
+  return response.status(500).json({ message: "Server error", error: error });
+};
+
+const handleDatabaseResults = (databaseResult: any, response: Response) => {
+  if (!databaseResult) {
+    return response.status(404).json({ message: "Document not found" });
+  }
+  return response.status(200).json(databaseResult);
+};
+
+router.get("/", async (request, response) => {
   try {
     const resumes = await Resume.find();
-    return res.status(200).json(resumes);
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Server error" });
+    return response.status(200).json(resumes);
+  } catch (error) {
+    return handleRequestFailure(error, response);
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", async (request, response) => {
   try {
-    const resume = new Resume(req.body);
+    const resume = new Resume(request.body);
     const savedResume = await Resume.create(resume);
-    return res.status(201).json(savedResume);
+    return response.status(201).json(savedResume);
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      if (error.name === "ValidationError") {
-        return res.status(400).send(error.message);
-      }
-    }
-    return res.status(500).send("Server error");
+    return handleRequestFailure(error, response);
   }
 });
 
-router.patch("/:id", async (req, res) => {
+router.patch("/:id", async (request, response) => {
   try {
-    const { id } = req.params;
-    const updates = req.body;
-    const updatedDocument = await Resume.findByIdAndUpdate(id, updates, {
+    const { id } = request.params;
+    const updates = request.body;
+    const updatedResume = await Resume.findByIdAndUpdate(id, updates, {
       new: true,
       runValidators: true,
     });
-
-    if (!updatedDocument) {
-      return res.status(404).json({ message: "Document not found" });
-    }
-
-    return res.status(200).json(updatedDocument);
+    return handleDatabaseResults(updatedResume, response);
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      if (error.name === "ValidationError") {
-        return res.status(400).send(error.message);
-      }
-    }
-    return res.status(500).send("Error Message: " + error);
+    return handleRequestFailure(error, response);
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", async (request, response) => {
   try {
-    const { id } = req.params;
-    const deletedUser = await Resume.findByIdAndDelete(id);
-
-    if (!deletedUser) {
-      return res.status(404).json({ message: "Document not found" });
-    }
-
-    return res.status(200).json(deletedUser);
+    const { id } = request.params;
+    const deletedResume = await Resume.findByIdAndDelete(id);
+    return handleDatabaseResults(deletedResume, response);
   } catch (error: unknown) {
-    return res.status(500).send("Error Message: " + error);
+    return handleRequestFailure(error, response);
   }
 });
 
